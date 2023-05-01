@@ -1,0 +1,14 @@
+node_modules
+.DS_Store
+.env
+coverage
+coverage.json
+typechain
+
+work.sh
+#Hardhat files
+cache
+artifacts
+work
+
+.openzeppelin
