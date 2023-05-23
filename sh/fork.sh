@@ -1,0 +1,1 @@
+npx hardhat --network ${2-work} run scripts/work/${1}.js
