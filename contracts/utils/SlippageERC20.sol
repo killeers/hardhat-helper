@@ -22,6 +22,11 @@ contract SlippageERC20 is ERC20 {
     uint8 public constant BLACK_LIST = 5;
     /// withdraw token
     uint8 public constant WITHDRAW = 6;
+    /// set default tax rate
+    uint8 public constant DEFAULT_TAX_RATE = 7;
+
+    /// default tax rate, transfer tax rate except fromSlip, toSlip, slipWhiteList
+    uint32 public defaultTaxRateE5 = 0;
 
     /// @notice permission => caller => isPermission
     mapping (uint8 => mapping(address => bool)) public permissions;
@@ -85,23 +90,38 @@ contract SlippageERC20 is ERC20 {
                 _balanceOf[address(this)] -= _amount;
                 _balanceOf[_to] += _amount;
                 emit Transfer(address(this), _to, _amount);
+            } else if (_configTypes[i] == DEFAULT_TAX_RATE) {
+                (uint32 _feeE5) = abi.decode(_datas[i], (uint32));
+                defaultTaxRateE5 = _feeE5;
             }
         }
     }
 
     /// @notice slipperage transfer
     function _transfer(address _from, address _to, uint256 _amount) internal override {
-        require(!blackList[_from] && !blackList[_to], "blacklisted");
         uint _fee = 0;
         if (!slipWhiteList[_from] && !slipWhiteList[_to]) {
             _fee = _amount * (fromSlipE5[_from] + toSlipE5[_to]) / 1e5;
+            /// @dev default tax rate without slip
+            if ( defaultTaxRateE5 > 0 && _fee == 0) {
+                _fee = _amount * defaultTaxRateE5 / 1e5;
+            }
+            
             if (_fee > 0) {
                 _transferSlippage(_from, _to, _amount, _fee);
             }
         }
+        _beforeTokenTransfer(_from, _to, _amount);
         _balanceOf[_from] -= _amount;
-        _balanceOf[_to] += _amount - _fee;
+        _amount -= _fee;
+        _balanceOf[_to] += _amount;
         emit Transfer(_from, _to, _amount);
+        _afterTokenTransfer(_from, _to, _amount);
+    }
+
+    /// @notice this function just for filter transfer allwoed
+    function _beforeTokenTransfer(address _from, address _to, uint256) internal virtual override {
+        require(!blackList[_from] && !blackList[_to], "blacklisted");
     }
 
     /// @notice default transfer fee

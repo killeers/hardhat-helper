@@ -11,15 +11,19 @@ contract ERC20 {
     event Transfer(address indexed from, address indexed to, uint value);
 
     function _mint(address to, uint value) internal {
+        _beforeTokenTransfer(address(0), to, value);
         _totalSupply += value;
         _balanceOf[to] += value;
         emit Transfer(address(0), to, value);
+        _afterTokenTransfer(address(0), to, value);
     }
 
     function _burn(address from, uint value) internal {
+        _beforeTokenTransfer(from, address(0), value);
         _balanceOf[from] -= value;
         _totalSupply -= value;
         emit Transfer(from, address(0), value);
+        _afterTokenTransfer(from, address(0), value);
     }
 
     function _approve(
@@ -36,9 +40,11 @@ contract ERC20 {
         address to,
         uint value
     ) internal virtual {
+        _beforeTokenTransfer(from, to, value);
         _balanceOf[from] -= value;
         _balanceOf[to] += value;
         emit Transfer(from, to, value);
+        _afterTokenTransfer(from, to, value);
     }
 
     function allowance(address owner, address spender) external view virtual returns (uint) {
@@ -79,4 +85,16 @@ contract ERC20 {
         _transfer(from, to, value);
         return true;
     }
+
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint value
+    ) internal virtual {}
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint value
+    ) internal virtual {}
 }
